@@ -5,16 +5,15 @@ import imutils
 import cv2
 import time
 import math
-import logging
-import itertools
-import matplotlib.pyplot as plt
 from sampler import *
 from rect import *
+from speedcalculator import *
+from plotmanager import *
 
 #markers (in meters)
-MARKERS_WIDTH = 32 * 10**(-2) 
-MARKERS_HEIGHT = 32 * 10**(-2)
-SUPPOSED_FPS = 30
+TEST_MARKERS_WIDTH = 32 * 10**(-2) 
+TEST_MARKERS_HEIGHT = 32 * 10**(-2)
+TEST_SUPPOSED_FPS = 30
 
 #masks
 GREEN_LOWER = (23, 23, 102)
@@ -30,16 +29,19 @@ TRACK_COLOR_LINE = (0, 0, 255)
 
 #Capture properties
 PLOT_TIME_INTERVAL=0.1
+PLOT_SPEED_GRAPH_PATH="speed.png"
+PLOT_SPEED_GRAPH_TITLE="Evolution vitesse m.s-1"
+
+#Parameters
+testMeasureParameters = MeasureParameters(TEST_SUPPOSED_FPS, TEST_MARKERS_WIDTH, TEST_MARKERS_HEIGHT)
+greenDetectionArea = DetectionParameters(GREEN_LOWER, GREEN_UPPER)
+blueDetectionArea = DetectionParameters(CYAN_LOWER, CYAN_UPPER)
+
+#Plot
+plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
+plotManager=PlotManager(PLOT_TIME_INTERVAL)
 
 
-class DetectionParameters:
-
-	def __init__(self, lower, upper):
-		self.lower=lower
-		self.upper=upper
-
-logging.basicConfig(filename='cammanager.log',level=logging.DEBUG)
-plotSampler=Sampler(PLOT_TIME_INTERVAL, SUPPOSED_FPS)
 
 
 def run():
@@ -60,14 +62,13 @@ def run():
 		#---- Find ping pong table markers
 		#--------------------------------------------------------------
 
-		blueDetectionArea = DetectionParameters(CYAN_LOWER, CYAN_UPPER)
 		blueMask = buildMask(hsv, blueDetectionArea)
 		cv2.imshow("BlueMask", blueMask)
 		blueCnts = cv2.findContours(blueMask.copy(), cv2.RETR_EXTERNAL,
 		cv2.CHAIN_APPROX_SIMPLE)[-2]
 		
 
-		rect=None;
+		rectTableTennis=None;
 		if len(blueCnts) > 2:
 			markers=[]
 			for cnt in blueCnts:
@@ -76,8 +77,8 @@ def run():
 
 
 			#With all found markers, draw a rectangle
-			pointsElected=calculateLongestDistance(markers)
-			rect=Rect(pointsElected[0], pointsElected[1])
+			pointsElected=GeometricUtils.calculateLongestDistance(markers)
+			rectTableTennis=Rect(pointsElected[0], pointsElected[1])
 
 
 			#Modelizes the table tennis
@@ -88,7 +89,6 @@ def run():
 		#---- Ball detection
 		#--------------------------------------------------------------
 		
-		greenDetectionArea = DetectionParameters(GREEN_LOWER, GREEN_UPPER)
 		greenMask = buildMask(hsv, greenDetectionArea)
 		cv2.imshow("GreenMask", greenMask)
 		cnts = cv2.findContours(greenMask.copy(), cv2.RETR_EXTERNAL,
@@ -106,22 +106,14 @@ def run():
 		#---- Calculate ball speed
 		#--------------------------------------------------------------
 		
-		if rect != None:
+		if rectTableTennis != None and rectTableTennis.contains(ballCenter):
 			
-			#Is data available to creat
-			isPtsDataExploitable = len(pts)>0 and pts[-1] != None
+			speedcalculator=SpeedCalculator(pts,(rectTableTennis.width(), rectTableTennis.height()), testMeasureParameters)
+			speed=speedcalculator.processSpeedCalculation(ballCenter)
 
-			if rect.contains(ballCenter) and isPtsDataExploitable:
-
-				speed = calculateSpeed(pts[-1], ballCenter, rect)
-				realSpeed = math.sqrt(speed[0]**2 + speed[1]**2)
-				#Take account results - plot/log
-				logging.debug("Speed : " + str(speed) + "/Real sp." + str(realSpeed))
-
-				#giveToEat for matplotlib
+			#giveToEat for matplotlib
+			if speed != None:
 				plotSampler.registerData(speed)
-
-				
 
 
 		#--------------------------------------------------------------
@@ -137,7 +129,7 @@ def run():
 		key = cv2.waitKey(1) & 0xFF
 		if key == ord("p"):
 			data=plotSampler.getData()
-			drawPlot(data)
+			plotManager.drawSpeedPlot(data,PLOT_SPEED_GRAPH_TITLE, PLOT_SPEED_GRAPH_PATH)
 
 		if key == ord("q"):
 			break
@@ -154,36 +146,13 @@ def buildMask(hsv, detectionParameters):
 	mask = cv2.dilate(mask, None, iterations=2)
 	return mask
 
+#TODO : Renommer ce truc là
 def trackBallCenter(largestContour):
 	# find the largest contour in the mask, then use
 	# it to compute the centroid
 	M = cv2.moments(largestContour)
 	center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 	return center
-
-def calculateSpeed(last,current,rect):
-	deltaX=current[0]-last[0]
-	deltaY=current[1]-last[1]
-
-	#Meters by frame
-	deltaXRealLife = MARKERS_WIDTH/rect.width()*deltaX
-	deltaYRealLife = MARKERS_HEIGHT/rect.height()*deltaY
-
-	speedX = deltaXRealLife * SUPPOSED_FPS
-	speedY = deltaYRealLife * SUPPOSED_FPS
-	return (speedX, speedY)
-
-
-def calculateLongestDistance(pointsList):
-	max=((), 0.0)
-	for couple in itertools.combinations(pointsList,2):
-		pt1=Point(couple[0][0], couple[0][1])
-		pt2=Point(couple[1][0], couple[1][1])
-		distance=pt1.distance_to(pt2)
-		if(distance>max[1]):
-			max=((pt1.as_tuple(), pt2.as_tuple()), distance)
-
-	return max[0]
 
 
 def drawEnclosingCircle(frame, largestContour, ballCenter):
@@ -208,20 +177,5 @@ def drawTrackLine(frame, pts):
 		# draw the connecting lines
 		thickness = int(np.sqrt(BUFFER_SIZE / float(i + 1)) * 2.5)
 		cv2.line(frame, pts[i - 1], pts[i], TRACK_COLOR_LINE, thickness)
-
-
-def drawPlot(data):
-	time=np.arange(0,PLOT_TIME_INTERVAL*len(data), PLOT_TIME_INTERVAL)
-	speed=np.array([math.sqrt(elem[0]**2 + elem[1]**2) for elem in data])
-	
-	plt.plot(time, speed)
-	plt.xlabel('time (s)')
-	plt.ylabel('speed (m.s-1)')
-	plt.title('Notre superbe graphe')
-	plt.grid(True)
-	plt.savefig("test.png")
-	plt.show()
-
-
 
 run()

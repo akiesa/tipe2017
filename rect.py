@@ -1,4 +1,6 @@
 import math
+import itertools
+
 class Point:
         def __init__(self, x=0.0, y=0.0):
                 self.x = x
@@ -125,4 +127,17 @@ class Rect:
           return "%s(%r, %r)" % (self.__class__.__name__,
                                  Point(self.left, self.top),
                                  Point(self.right, self.bottom))
+
+class GeometricUtils:
+
+  def calculateLongestDistance(pointsList):
+    max=((), 0.0)
+    for couple in itertools.combinations(pointsList,2):
+      pt1=Point(couple[0][0], couple[0][1])
+      pt2=Point(couple[1][0], couple[1][1])
+      distance=pt1.distance_to(pt2)
+      if(distance>max[1]):
+        max=((pt1.as_tuple(), pt2.as_tuple()), distance)
+
+    return max[0]
 
