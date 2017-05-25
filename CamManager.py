@@ -9,17 +9,8 @@ from sampler import *
 from rect import *
 from speedcalculator import *
 from plotmanager import *
+from config import *
 
-#markers (in meters)
-TEST_MARKERS_WIDTH = 32 * 10**(-2) 
-TEST_MARKERS_HEIGHT = 32 * 10**(-2)
-TEST_SUPPOSED_FPS = 30
-
-#masks
-GREEN_LOWER = (23, 23, 102)
-GREEN_UPPER = (100, 100, 250)
-CYAN_LOWER = (23, 50, 100)
-CYAN_UPPER = (200, 255, 255)
 
 #input output parameters
 BUFFER_SIZE = 64
@@ -30,12 +21,16 @@ TRACK_COLOR_LINE = (0, 0, 255)
 #Capture properties
 PLOT_TIME_INTERVAL=0.1
 PLOT_SPEED_GRAPH_PATH="speed.png"
-PLOT_SPEED_GRAPH_TITLE="Evolution vitesse m.s-1"
+PLOT_SPEED_GRAPH_TITLE="Evolution vitesse m.s-1" 
+
+#Import environment parameters
+
 
 #Parameters
-testMeasureParameters = MeasureParameters(TEST_SUPPOSED_FPS, TEST_MARKERS_WIDTH, TEST_MARKERS_HEIGHT)
-greenDetectionArea = DetectionParameters(GREEN_LOWER, GREEN_UPPER)
-blueDetectionArea = DetectionParameters(CYAN_LOWER, CYAN_UPPER)
+config=Config.createTestGlobalConfiguration()
+testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"])
+greenDetectionArea = DetectionParameters(config["GREEN_LOWER"], config["GREEN_UPPER"])
+blueDetectionArea = DetectionParameters(config["CYAN_LOWER"], config["CYAN_UPPER"])
 
 #Plot
 plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
