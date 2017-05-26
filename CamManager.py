@@ -10,6 +10,8 @@ from rect import *
 from speedcalculator import *
 from plotmanager import *
 from config import *
+from detectionmanager import *
+from parameters import *
 
 
 #input output parameters
@@ -29,8 +31,8 @@ PLOT_SPEED_GRAPH_TITLE="Evolution vitesse m.s-1"
 #Parameters
 config=Config.createTestGlobalConfiguration()
 testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"])
-greenDetectionArea = DetectionParameters(config["GREEN_LOWER"], config["GREEN_UPPER"])
-blueDetectionArea = DetectionParameters(config["CYAN_LOWER"], config["CYAN_UPPER"])
+greenDetectionArea = DetectionParameters(config["GREEN_LOWER"], config["GREEN_UPPER"], TRACK_COLOR_LINE, "Ball detection mask")
+blueDetectionArea = DetectionParameters(config["CYAN_LOWER"], config["CYAN_UPPER"], TRACK_COLOR_LINE, "Markers detection mask")
 
 #Plot
 plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
@@ -49,51 +51,29 @@ def run():
 		(grabbed, frame) = camera.read()
 
 		frame = imutils.resize(frame, width=600, height=500)
-		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-		
-		
+		detectionManager = DetectionManager(frame)
 
 		#--------------------------------------------------------------
-		#---- Find ping pong table markers
+		#---- Find ping pong table markers and modelize TT
 		#--------------------------------------------------------------
-
-		blueMask = buildMask(hsv, blueDetectionArea)
-		cv2.imshow("BlueMask", blueMask)
-		blueCnts = cv2.findContours(blueMask.copy(), cv2.RETR_EXTERNAL,
-		cv2.CHAIN_APPROX_SIMPLE)[-2]
-		
 
 		rectTableTennis=None;
-		if len(blueCnts) > 2:
-			markers=[]
-			for cnt in blueCnts:
-				marker = trackBallCenter(cnt)
-				markers.append(marker)
-
-
-			#With all found markers, draw a rectangle
-			pointsElected=GeometricUtils.calculateLongestDistance(markers)
+		estimatedCentroids=detectionManager.processMultiTarget(blueDetectionArea)
+		if len(estimatedCentroids) > 0:
+			#With all found markers, draw a rectangle simultating table tennis
+			pointsElected=GeometricUtils.calculateLongestDistance(estimatedCentroids)
 			rectTableTennis=Rect(pointsElected[0], pointsElected[1])
-
-
-			#Modelizes the table tennis
-			cv2.rectangle(frame, pointsElected[0], pointsElected[1], TRACK_COLOR_LINE)
-		
+			cv2.rectangle(frame, pointsElected[0], pointsElected[1], blueDetectionArea.trackingColor)
+			
 
 		#--------------------------------------------------------------
 		#---- Ball detection
 		#--------------------------------------------------------------
 		
-		greenMask = buildMask(hsv, greenDetectionArea)
-		cv2.imshow("GreenMask", greenMask)
-		cnts = cv2.findContours(greenMask.copy(), cv2.RETR_EXTERNAL,
-		cv2.CHAIN_APPROX_SIMPLE)[-2]
-		#Find ball position
 		ballCenter = (0,0)
-		if len(cnts) > 0:
-			largestContour = max(cnts, key=cv2.contourArea)
-			ballCenter = trackBallCenter(largestContour)
-			drawEnclosingCircle(frame, largestContour, ballCenter)
+		estimatedCentroid = detectionManager.processSingleTarget(greenDetectionArea,True)
+		if estimatedCentroid != None:
+			ballCenter=estimatedCentroid
 
 		print("BallCenter" + str(ballCenter))
 
@@ -133,32 +113,6 @@ def run():
 	camera.release()
 	cv2.destroyAllWindows()
 
-
-
-def buildMask(hsv, detectionParameters):
-	mask = cv2.inRange(hsv, detectionParameters.lower, detectionParameters.upper)
-	mask = cv2.erode(mask, None, iterations=2)
-	mask = cv2.dilate(mask, None, iterations=2)
-	return mask
-
-#TODO : Renommer ce truc là
-def trackBallCenter(largestContour):
-	# find the largest contour in the mask, then use
-	# it to compute the centroid
-	M = cv2.moments(largestContour)
-	center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-	return center
-
-
-def drawEnclosingCircle(frame, largestContour, ballCenter):
-	#Will draw circle if radius meets a minimum size
-	((x, y), radius) = cv2.minEnclosingCircle(largestContour)
-	if radius > 10:
-			# draw the circle and centroid on the frame,
-			# then update the list of tracked points
-			cv2.circle(frame, (int(x), int(y)), int(radius),
-				(0, 255, 255), 2)
-			cv2.circle(frame, ballCenter, 5, (0, 0, 255), -1)
 
 def drawTrackLine(frame, pts): 
 	# loop over the set of tracked points

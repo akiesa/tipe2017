@@ -9,6 +9,8 @@ class MeasureParameters:
 
 class DetectionParameters:
 
-	def __init__(self, lower, upper):
+	def __init__(self, lower, upper, trackingColor=(0,0,255), maskFrameTitle="Masque sans titre"):
 		self.lower=lower
 		self.upper=upper
+		self.trackingColor=trackingColor
+		self.maskFrameTitle=maskFrameTitle
