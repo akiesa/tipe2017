@@ -18,6 +18,9 @@ class Config:
 		testGlobalConfiguration["GREEN_UPPER"] = (100, 100, 250)
 		testGlobalConfiguration["CYAN_LOWER"] = (23, 50, 100)
 		testGlobalConfiguration["CYAN_UPPER"] = (200, 255, 255)
+		testGlobalConfiguration["RED_LOWER"] = (50 , 100 , 100)
+		testGlobalConfiguration["RED_UPPER"] = (250, 200 ,200)
+
 
 		return testGlobalConfiguration
 

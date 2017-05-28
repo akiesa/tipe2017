@@ -33,6 +33,7 @@ config=Config.createTestGlobalConfiguration()
 testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"])
 greenDetectionArea = DetectionParameters(config["GREEN_LOWER"], config["GREEN_UPPER"], TRACK_COLOR_LINE, "Ball detection mask")
 blueDetectionArea = DetectionParameters(config["CYAN_LOWER"], config["CYAN_UPPER"], TRACK_COLOR_LINE, "Markers detection mask")
+redDectectionArea = DetectionParameters(config["RED_LOWER"], config["RED_UPPER"], TRACK_COLOR_LINE, "Robot detection mask")
 
 #Plot
 plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
@@ -76,6 +77,10 @@ def run():
 			ballCenter=estimatedCentroid
 
 		print("BallCenter" + str(ballCenter))
+		#Red Detection
+
+		Redcentroids = detectionManager.processSingleTarget(redDectectionArea,True)
+
 
 		#--------------------------------------------------------------
 		#---- Calculate ball speed
