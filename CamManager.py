@@ -12,7 +12,7 @@ from plotmanager import *
 from config import *
 from detectionmanager import *
 from parameters import *
-
+from initialisationsingleton import *
 
 #input output parameters
 BUFFER_SIZE = 64
@@ -26,34 +26,37 @@ PLOT_SPEED_GRAPH_PATH="speed.png"
 PLOT_SPEED_GRAPH_TITLE="Evolution vitesse m.s-1" 
 
 #Import environment parameters
-
-
 #Parameters
 config=Config.createTestGlobalConfiguration()
-testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"])
+testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"], config["CAMERA_FLOOR_DISTANCE"], config["MARKER_Z_LENGTH"])
 greenDetectionArea = DetectionParameters(config["GREEN_LOWER"], config["GREEN_UPPER"], TRACK_COLOR_LINE, "Ball detection mask")
 blueDetectionArea = DetectionParameters(config["CYAN_LOWER"], config["CYAN_UPPER"], TRACK_COLOR_LINE, "Markers detection mask")
-redDectectionArea = DetectionParameters(config["RED_LOWER"], config["RED_UPPER"], TRACK_COLOR_LINE, "Robot detection mask")
+redDetectionArea = DetectionParameters(config["RED_LOWER"], config["RED_UPPER"], TRACK_COLOR_LINE, "Robot detection mask")
+#greenpureDetectionArea = DetectionParameters(config["GREENPURE_LOWER"], config["GREENPURE_UPPER"], TRACK_COLOR_LINE, "init detection mask")
 
 #Plot
 plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
 plotManager=PlotManager(PLOT_TIME_INTERVAL)
+
+"""
+((x, y), radius) = cv2.minEnclosingCircle(largestContour)
+
+"""
 
 
 
 
 def run():
 	print("Run Camera")
+
 	camera = cv2.VideoCapture(0)
 	pts = deque(maxlen=BUFFER_SIZE)
-
 	while True:
 		# grab the current frame
 		(grabbed, frame) = camera.read()
 
 		frame = imutils.resize(frame, width=600, height=500)
 		detectionManager = DetectionManager(frame)
-
 		#--------------------------------------------------------------
 		#---- Find ping pong table markers and modelize TT
 		#--------------------------------------------------------------
@@ -76,10 +79,15 @@ def run():
 		if estimatedCentroid != None:
 			ballCenter=estimatedCentroid
 
-		print("BallCenter" + str(ballCenter))
 		#Red Detection
+		
+		if InitialisationSingleton.instance == None:
+			redCentroid =  detectionManager.processSingleTarget(redDetectionArea)
+			#focal = detectionManager.determineFocal(testMeasureParameters, greenpureDetectionArea)
 
-		Redcentroids = detectionManager.processSingleTarget(redDectectionArea,True)
+			if redCentroid != None:#and focal != None:
+				initialisationSingleton=InitialisationSingleton(redCentroid, 0)
+		
 
 
 		#--------------------------------------------------------------

@@ -1,13 +1,14 @@
 import cv2
 from parameters import *
 
+
 class DetectionManager:
 
 	def __init__(self, frame):
 		self.frame=frame
 		self.hsv=cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-	def processSingleTarget(self, detectionParameters, needsToBeTracked):
+	def processSingleTarget(self, detectionParameters, needsToBeTracked=False):
 		mask = self.buildMask(detectionParameters)
 		cv2.imshow(detectionParameters.maskFrameTitle, mask)
 		cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
@@ -37,6 +38,20 @@ class DetectionManager:
 				centroids.append(centroid)
 
 		return centroids
+
+	def determineFocal(self, measureParameters, detectionParameters):
+		mask = self.buildMask(detectionParameters)
+		cv2.imshow(detectionParameters.maskFrameTitle, mask)
+		cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+		cv2.CHAIN_APPROX_SIMPLE)[-2] 
+
+		focal=None
+		if len(cnts)>0:
+			largestContour = max(cnts, key=cv2.contourArea)
+			((x, y), radius) = cv2.minEnclosingCircle(largestContour)
+			focal=radius*2*measureParameters.cameraFloorDistance/measureParameters.markerZLength
+
+		return focal
 
 
 	def buildMask(self, detectionParameters):

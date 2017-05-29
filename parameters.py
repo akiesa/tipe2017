@@ -1,10 +1,13 @@
 
 class MeasureParameters:
 
-	def __init__(self, fps, markersWidth, markersHeight):
+	def __init__(self, fps, markersWidth, markersHeight, cameraFloorDistance, markerZLength):
 		self.fps=fps
 		self.markersWidth=markersWidth
 		self.markersHeight=markersHeight
+		self.cameraFloorDistance=cameraFloorDistance
+		self.markerZLength=markerZLength
+
 
 
 class DetectionParameters:
