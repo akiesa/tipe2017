@@ -1,5 +1,6 @@
 import logging
 from parameters import *
+from initialisationsingleton import *
 
 
 logging.basicConfig(filename='cammanager.log',level=logging.DEBUG)
@@ -40,3 +41,21 @@ class SpeedCalculator:
 		speedX = deltaXRealLife * self.measureParameters.fps
 		speedY = deltaYRealLife * self.measureParameters.fps
 		return (speedX, speedY)
+
+	#TODO : Mais l'Arduino ne devra pas bien sur dépasser les bords du rectangle
+	def estimateArduinoTargetPosition(self, last, current):
+		deltaX=current[0]-last[0]
+		deltaY=current[1]-last[1]
+
+		#Calculate line equation y=ax+b (traduire tangente...)
+		a=deltaY/deltaX
+		b=current[1]-a*current[0]
+
+		#Estimate intersection point with line
+		robotCoordinates=InitialisationSingleton.instance.val
+		xtarget=(robotCoordinates[1]-b)/a
+		
+
+
+
+
