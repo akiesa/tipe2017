@@ -5,6 +5,7 @@ import imutils
 import cv2
 import time
 import math
+import numpy
 from sampler import *
 from rect import *
 from speedcalculator import *
@@ -37,12 +38,6 @@ redDetectionArea = DetectionParameters(config["RED_LOWER"], config["RED_UPPER"],
 #Plot
 plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
 plotManager=PlotManager(PLOT_TIME_INTERVAL)
-
-"""
-((x, y), radius) = cv2.minEnclosingCircle(largestContour)
-
-"""
-
 
 
 
@@ -88,8 +83,6 @@ def run():
 			if redCentroid != None:#and focal != None:
 				initialisationSingleton=InitialisationSingleton(redCentroid, 0)
 		
-
-
 		#--------------------------------------------------------------
 		#---- Calculate ball speed
 		#--------------------------------------------------------------
@@ -102,7 +95,7 @@ def run():
 			#giveToEat for matplotlib
 			if speed != None:
 				plotSampler.registerData(speed)
-
+		
 
 		#--------------------------------------------------------------
 		#---- Draw track line to follow ball
@@ -110,7 +103,6 @@ def run():
 
 		pts.appendleft(ballCenter)
 		drawTrackLine(frame, pts)
-
 		cv2.imshow("Frame", frame)
 
 		# if the 'q' key is pressed, stop the loop
@@ -118,6 +110,9 @@ def run():
 		if key == ord("p"):
 			data=plotSampler.getData()
 			plotManager.drawSpeedPlot(data,PLOT_SPEED_GRAPH_TITLE, PLOT_SPEED_GRAPH_PATH)
+
+		if key ==ord("c"):
+			plotManager.drawSquareline(pts)
 
 		if key == ord("q"):
 			break
@@ -139,5 +134,7 @@ def drawTrackLine(frame, pts):
 		# draw the connecting lines
 		thickness = int(np.sqrt(BUFFER_SIZE / float(i + 1)) * 2.5)
 		cv2.line(frame, pts[i - 1], pts[i], TRACK_COLOR_LINE, thickness)
+
+
 
 run()
