@@ -60,7 +60,8 @@ class SpeedCalculator:
 		A = np.vstack([x, np.ones(len(x))]).T
 		m, c = np.linalg.lstsq(A, y)[0]
 
-		xTarget = robotCoordinates[1]-c/m
+		xTarget = (robotCoordinates[1]-c)/m
+		return xTarget
 
 		
 

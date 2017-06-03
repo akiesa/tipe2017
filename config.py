@@ -16,6 +16,7 @@ class Config:
 		#See if useful parameters..
 		testGlobalConfiguration["CAMERA_FLOOR_DISTANCE"] = 24
 		testGlobalConfiguration["MARKER_Z_LENGTH"] = 3
+		testGlobalConfiguration["BALLSIZE"]=7
 
 		#masks
 		testGlobalConfiguration["GREEN_LOWER"] = (23, 23, 102)

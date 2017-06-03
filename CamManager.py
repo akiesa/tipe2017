@@ -6,6 +6,7 @@ import cv2
 import time
 import math
 import numpy
+import serial as ser
 from sampler import *
 from rect import *
 from speedcalculator import *
@@ -14,6 +15,8 @@ from config import *
 from detectionmanager import *
 from parameters import *
 from initialisationsingleton import *
+from pythontoarduino import *
+
 
 #input output parameters
 BUFFER_SIZE = 64
@@ -29,16 +32,15 @@ PLOT_SPEED_GRAPH_TITLE="Evolution vitesse m.s-1"
 #Import environment parameters
 #Parameters
 config=Config.createTestGlobalConfiguration()
-testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"], config["CAMERA_FLOOR_DISTANCE"], config["MARKER_Z_LENGTH"])
+testMeasureParameters = MeasureParameters(config["SUPPOSED_FPS"], config["MARKERS_WIDTH"], config["MARKERS_HEIGHT"], config["CAMERA_FLOOR_DISTANCE"], config["MARKER_Z_LENGTH"], config["BALLSIZE"])
 greenDetectionArea = DetectionParameters(config["GREEN_LOWER"], config["GREEN_UPPER"], TRACK_COLOR_LINE, "Ball detection mask")
 blueDetectionArea = DetectionParameters(config["CYAN_LOWER"], config["CYAN_UPPER"], TRACK_COLOR_LINE, "Markers detection mask")
 redDetectionArea = DetectionParameters(config["RED_LOWER"], config["RED_UPPER"], TRACK_COLOR_LINE, "Robot detection mask")
-#greenpureDetectionArea = DetectionParameters(config["GREENPURE_LOWER"], config["GREENPURE_UPPER"], TRACK_COLOR_LINE, "init detection mask")
+greenpureDetectionArea = DetectionParameters(config["GREENPURE_LOWER"], config["GREENPURE_UPPER"], TRACK_COLOR_LINE, "init detection mask")
 
 #Plot
 plotSampler=Sampler(PLOT_TIME_INTERVAL, testMeasureParameters.fps)
 plotManager=PlotManager(PLOT_TIME_INTERVAL)
-
 
 
 def run():
@@ -65,28 +67,45 @@ def run():
 			cv2.rectangle(frame, pointsElected[0], pointsElected[1], blueDetectionArea.trackingColor)
 			
 
-		#--------------------------------------------------------------
-		#---- Ball detection
-		#--------------------------------------------------------------
-		
-		ballCenter = (0,0)
-		estimatedCentroid = detectionManager.processSingleTarget(greenDetectionArea,True)
-		if estimatedCentroid != None:
-			ballCenter=estimatedCentroid
+
+
 
 		#Red Detection
 		
 		if InitialisationSingleton.instance == None:
-			redCentroid =  detectionManager.processSingleTarget(redDetectionArea)
-			#focal = detectionManager.determineFocal(testMeasureParameters, greenpureDetectionArea)
+			redCentroid =  detectionManager.processSingleTarget(redDetectionArea,testMeasureParameters)
+			focal = detectionManager.determineFocal(testMeasureParameters, greenpureDetectionArea)
 
-			if redCentroid != None:#and focal != None:
+			if redCentroid != None and focal != None:
 				initialisationSingleton=InitialisationSingleton(redCentroid, 0)
+
+
+		#--------------------------------------------------------------
+		#---- Ball detection
+		#--------------------------------------------------------------
 		
+
+
+		ballCenter = (0,0)
+
+		if focal != None:
+			estimatedZCentroid = detectionManager.processSingleTarget(greenDetectionArea,testMeasureParameters,True,focal)
+			print(estimatedZCentroid)
+			estimatedCentroid = None
+			if estimatedZCentroid != None:
+				estimatedCentroid=estimatedZCentroid[0]
+		else:
+			estimatedCentroid = detectionManager.processSingleTarget(greenDetectionArea,testMeasureParameters,True)
+
+		if estimatedCentroid != None:
+			ballCenter=estimatedCentroid
+
+
 		#--------------------------------------------------------------
 		#---- Calculate ball speed
-		#--------------------------------------------------------------
-		
+		#-------------------------------------------------------------
+
+
 		if rectTableTennis != None and rectTableTennis.contains(ballCenter):
 			
 			speedcalculator=SpeedCalculator(pts,(rectTableTennis.width(), rectTableTennis.height()), testMeasureParameters)
@@ -95,7 +114,11 @@ def run():
 			#giveToEat for matplotlib
 			if speed != None:
 				plotSampler.registerData(speed)
-		
+
+
+		if rectTableTennis != None and pts != None:
+			if rectTableTennis.contains(pts[-1]):
+				deltaX=SpeedCalculator.estimateArduinoTargetPosition(pts)
 
 		#--------------------------------------------------------------
 		#---- Draw track line to follow ball
@@ -104,6 +127,9 @@ def run():
 		pts.appendleft(ballCenter)
 		drawTrackLine(frame, pts)
 		cv2.imshow("Frame", frame)
+
+			#TransferManager.Transferdelta(deltaX)
+		
 
 		# if the 'q' key is pressed, stop the loop
 		key = cv2.waitKey(1) & 0xFF

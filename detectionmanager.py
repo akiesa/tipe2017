@@ -8,7 +8,7 @@ class DetectionManager:
 		self.frame=frame
 		self.hsv=cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-	def processSingleTarget(self, detectionParameters, needsToBeTracked=False):
+	def processSingleTarget(self, detectionParameters,measureParameters, needsToBeTracked=False, focal=0):
 		mask = self.buildMask(detectionParameters)
 		cv2.imshow(detectionParameters.maskFrameTitle, mask)
 		cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
@@ -20,6 +20,12 @@ class DetectionManager:
 			centroid = self.trackCentroid(largestContour)
 			if needsToBeTracked:
 				self.drawEnclosingCircle(largestContour, centroid, detectionParameters.trackingColor)
+				((x, y), radius) = cv2.minEnclosingCircle(largestContour)
+				if focal != 0:
+					((x, y), radius) = cv2.minEnclosingCircle(largestContour)
+					Z=(focal*measureParameters.ballsize)/(2*radius)
+					A=[centroid , Z]
+					return A
 
 		return centroid
 
