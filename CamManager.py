@@ -90,7 +90,6 @@ def run():
 
 		if focal != None:
 			estimatedZCentroid = detectionManager.processSingleTarget(greenDetectionArea,testMeasureParameters,True,focal)
-			print(estimatedZCentroid)
 			estimatedCentroid = None
 			if estimatedZCentroid != None:
 				estimatedCentroid=estimatedZCentroid[0]
@@ -116,9 +115,10 @@ def run():
 				plotSampler.registerData(speed)
 
 
-		if rectTableTennis != None and pts != None:
-			if rectTableTennis.contains(pts[-1]):
-				deltaX=SpeedCalculator.estimateArduinoTargetPosition(pts)
+		if rectTableTennis != None and pts != deque([], maxlen=BUFFER_SIZE):
+			print(pts[-1])
+			if rectTableTennis.contains(pts[-1]) and len(pts)<2:
+				deltaX=SpeedCalculator.estimateArduinoTargetPosition(redCentroid ,pts)
 
 		#--------------------------------------------------------------
 		#---- Draw track line to follow ball
