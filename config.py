@@ -19,16 +19,14 @@ class Config:
 		testGlobalConfiguration["BALLSIZE"]=7
 
 		#masks
-		testGlobalConfiguration["GREEN_LOWER"] = (23, 23, 102)
+		testGlobalConfiguration["GREEN_LOWER"] = (20, 20, 50)
 		testGlobalConfiguration["GREEN_UPPER"] = (100, 100, 250)
-		testGlobalConfiguration["CYAN_LOWER"] = (25, 52, 102)
-		testGlobalConfiguration["CYAN_UPPER"] = (200, 255, 255)
-		testGlobalConfiguration["RED_LOWER"] = (140 , 140 , 140)
-		testGlobalConfiguration["RED_UPPER"] = (250, 200 ,200)
-		testGlobalConfiguration["GREENPURE_LOWER"] = (17, 17, 40)
-		testGlobalConfiguration["GREENPURE_UPPER"] = (180, 255, 200)
-
-
+		testGlobalConfiguration["CYAN_LOWER"] = (35, 60, 150)
+		testGlobalConfiguration["CYAN_UPPER"] = (150, 255, 255)
+		testGlobalConfiguration["RED_LOWER"] = (100, 170, 200)
+		testGlobalConfiguration["RED_UPPER"] = (220, 255, 255)
+		testGlobalConfiguration["GREENPURE_LOWER"] = (15, 100, 202)
+		testGlobalConfiguration["GREENPURE_UPPER"] = (130, 127, 250)
 		return testGlobalConfiguration
 
 	def createReleaseGlobalConfiguration():

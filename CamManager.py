@@ -45,7 +45,6 @@ plotManager=PlotManager(PLOT_TIME_INTERVAL)
 
 def run():
 	print("Run Camera")
-
 	camera = cv2.VideoCapture(0)
 	pts = deque(maxlen=BUFFER_SIZE)
 	while True:
@@ -86,7 +85,7 @@ def run():
 		
 
 
-		ballCenter = (0,0)
+		ballCenter = None
 
 		if focal != None:
 			estimatedZCentroid = detectionManager.processSingleTarget(greenDetectionArea,testMeasureParameters,True,focal)
@@ -105,20 +104,20 @@ def run():
 		#-------------------------------------------------------------
 
 
-		if rectTableTennis != None and rectTableTennis.contains(ballCenter):
+		if ballCenter != None and rectTableTennis != None and rectTableTennis.contains(ballCenter):
 			
 			speedcalculator=SpeedCalculator(pts,(rectTableTennis.width(), rectTableTennis.height()), testMeasureParameters)
 			speed=speedcalculator.processSpeedCalculation(ballCenter)
+			xTarget=speedcalculator.estimateArduinoTargetPosition()
+
+			if xTarget != None:
+				transferManager=TransferManager(xTarget, 0)
+				transferManager.transfer()
 
 			#giveToEat for matplotlib
 			if speed != None:
 				plotSampler.registerData(speed)
 
-
-		if rectTableTennis != None and pts != deque([], maxlen=BUFFER_SIZE):
-			print(pts[-1])
-			if rectTableTennis.contains(pts[-1]) and len(pts)<2:
-				deltaX=SpeedCalculator.estimateArduinoTargetPosition(redCentroid ,pts)
 
 		#--------------------------------------------------------------
 		#---- Draw track line to follow ball
@@ -127,8 +126,6 @@ def run():
 		pts.appendleft(ballCenter)
 		drawTrackLine(frame, pts)
 		cv2.imshow("Frame", frame)
-
-			#TransferManager.Transferdelta(deltaX)
 		
 
 		# if the 'q' key is pressed, stop the loop

@@ -50,18 +50,22 @@ class SpeedCalculator:
 		return (speedX, speedY)
 
 	#TODO : Mais l'Arduino ne devra pas bien sur dépasser les bords du rectangle
-	def estimateArduinoTargetPosition(self, robotCoordinates , pts):
+	def estimateArduinoTargetPosition(self):
 
-		robotCoordinates=InitialisationSingleton.instance.robotInitialPosition
-		exploitablePoints = np.array([pt for pt in pts if pt is not None])
-		x=np.array([elem[0] for elem in exploitablePoints])
-		y=np.array([elem[1] for elem in exploitablePoints])
+		xTarget=None
+		isPtsDataExploitable = len(self.pts)>0 and self.pts[-1] != None
+		if isPtsDataExploitable:
+			robotCoordinates=InitialisationSingleton.instance.robotInitialPosition
+			exploitablePoints = np.array([pt for pt in self.pts if pt is not None])
+			x=np.array([elem[0] for elem in exploitablePoints])
+			y=np.array([elem[1] for elem in exploitablePoints])
 
-		A = np.vstack([x, np.ones(len(x))]).T
-		m, c = np.linalg.lstsq(A, y)[0]
+			A = np.vstack([x, np.ones(len(x))]).T
+			m, c = np.linalg.lstsq(A, y)[0]
 
-		xTarget = (robotCoordinates[1]-c)/m
+			xTarget = (robotCoordinates[1]-c)/m
 		return xTarget
+
 
 		
 
